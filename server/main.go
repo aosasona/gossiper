@@ -2,31 +2,30 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"net"
-	"strconv"
-	"strings"
 	"sync"
-	"unsafe"
+	"time"
 )
 
 type Client struct {
-	ID   string
-	Addr string
-	Port int
+	ID       string
+	Addr     string
+	Port     int
+	Alive    bool
+	LastPing time.Time
 }
 
-type Payload struct {
-	ID         string
-	Message    string
-	RawMessage []byte
-	ClientID   string
-	AckCount   int
-	TotalBytes uint
-}
-
-// message format: clientID|messageID|message|totalBytes
-// ack format: ACK|clientID|mesageID
+/**
+* === MESSAGE FORMATS ===
+*
+* Every message has 3 common parts; type|the client ID and the tail; totalBytes (used by the server to verify the data is in good shape)
+*
+* message: MSG|clientID|messageID|message|totalBytes
+* ack: ACK|clientID|mesageID|totalBytes
+* ping: PING|clientID|totalBytes
+*
+* Clients reach out to the server at an interval provided by the SERVER and it is periodically checked to ensure that the client is still connected
+ */
 
 func main() {
 	server := new(Server)
@@ -62,34 +61,4 @@ func main() {
 	wg.Wait()
 	close(broadcastChan)
 
-}
-
-func decodeMessage(message []byte) (*Payload, error) {
-	payload := new(Payload)
-	messageString := string(message)
-
-	messageParts := strings.Split(messageString, "|")
-
-	if len(messageParts) != 4 {
-		return payload, fmt.Errorf("invalid payload received")
-	}
-
-	messageSize, err := strconv.Atoi(messageParts[3])
-	if err != nil {
-		return payload, fmt.Errorf("unable to parse total bytes: %s", err.Error())
-	}
-
-	originalMsg := fmt.Sprintf("%s|%s|%s", messageParts[0], messageParts[1], messageParts[2])
-	reconstructedMessageSize := len(originalMsg) * int(unsafe.Sizeof(byte(0)))
-
-	if reconstructedMessageSize != messageSize {
-		return payload, fmt.Errorf("message has been corrupted in transit")
-	}
-
-	payload.ClientID = messageParts[0]
-	payload.ID = messageParts[1]
-	payload.Message = string(messageParts[2])
-	payload.RawMessage = message
-
-	return payload, nil
 }

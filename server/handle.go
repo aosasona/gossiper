@@ -6,6 +6,8 @@ import (
 )
 
 func handleIncomingMsg(conn *net.UDPConn, server *Server, broadcastChannel chan []byte) {
+	// TODO: handle ACKs and PINGs
+
 	for {
 		msg := make([]byte, 1024)
 		n, addr, err := conn.ReadFromUDP(msg)
@@ -16,9 +18,10 @@ func handleIncomingMsg(conn *net.UDPConn, server *Server, broadcastChannel chan 
 		}
 
 		server.AddClient(Client{
-			ID:   payload.ClientID,
-			Addr: addr.IP.String(),
-			Port: addr.Port,
+			ID:    payload.ClientID,
+			Addr:  addr.IP.String(),
+			Port:  addr.Port,
+			Alive: true,
 		})
 
 		fmt.Printf("[%s] %s\n", payload.ClientID, payload.Message)

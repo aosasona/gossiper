@@ -4,12 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
-	"strconv"
+	"os"
+	"os/signal"
 	"sync"
-	"time"
-	"unsafe"
 )
 
 const (
@@ -33,9 +31,10 @@ func init() {
 
 func main() {
 	noInput := flag.Bool("no-input", false, "if you want the client to take input from std-in")
+	serverPort := flag.String("server-port", "8080", "port for the server")
 	flag.Parse()
 
-	remoteAddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:8080")
+	remoteAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("127.0.0.1:%s", *serverPort))
 	if err != nil {
 		log.Printf("failed to resolve address: %s", err.Error())
 		return
@@ -49,6 +48,7 @@ func main() {
 
 	defer conn.Close()
 
+	killChan := make(chan os.Signal)
 	var wg sync.WaitGroup
 
 	if !*noInput {
@@ -65,67 +65,6 @@ func main() {
 		handleIncomingMsg(conn, remoteAddr)
 	}()
 
+	signal.Notify(killChan, os.Interrupt)
 	wg.Wait()
-}
-
-func generateID(args GeneratorArgs) string {
-	var id string
-
-	if !args.NumOnly && args.Delimiter == "" {
-		args.Delimiter = "_"
-	}
-
-	if args.Max == 0 {
-		args.Max = 9999
-	}
-
-	if args.Min == 0 {
-		args.Min = 99
-	}
-
-	prefixes := []rune{
-		'a',
-		'b',
-		'c',
-		'd',
-		'e',
-		'f',
-		'h',
-		'k',
-		'm',
-		'n',
-		'p',
-		'q',
-		'r',
-		's',
-		't',
-		'u',
-		'w',
-		'x',
-	}
-	rand.Seed(time.Now().UnixNano())
-	suffix := rand.Intn((args.Max-args.Min)+1) + args.Min
-
-	if !args.NumOnly {
-		for i := 0; i < 6; i++ {
-			prefix := prefixes[rand.Intn(len(prefixes)-1)]
-			id += string(prefix)
-		}
-	}
-	id += args.Delimiter + strconv.Itoa(suffix)
-	return id
-}
-
-func encapsulate(message string) []byte {
-	var payload []byte
-
-	msgID := generateID(GeneratorArgs{NumOnly: true, Max: 999999})
-
-	rawPayload := fmt.Sprintf("%s|%s|%s", clientID, msgID, message)
-	payloadSize := len(rawPayload) * int(unsafe.Sizeof(byte(0)))
-	payloadWithTail := rawPayload + fmt.Sprintf("|%d", payloadSize)
-
-	payload = []byte(payloadWithTail)
-
-	return payload
 }

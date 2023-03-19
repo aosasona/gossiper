@@ -25,7 +25,7 @@ func handleOutgoingMsg(conn *net.UDPConn, serverAddr *net.UDPAddr) {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		fmt.Printf("%s>", clientID)
+		fmt.Printf("%s> ", clientID)
 		msg, err := reader.ReadString('\n')
 		if err != nil {
 			log.Printf("unable to read input: %s", err.Error())
@@ -33,7 +33,7 @@ func handleOutgoingMsg(conn *net.UDPConn, serverAddr *net.UDPAddr) {
 		}
 
 		msg = msg[:len(msg)-1]
-		_, err = conn.Write(encapsulate(msg))
+		_, err = conn.Write(encapsulate(msg, MSG))
 		if err != nil {
 			log.Printf("error sending message: %s", err.Error())
 			continue
