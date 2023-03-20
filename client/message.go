@@ -7,6 +7,8 @@ import (
 
 type PayloadType string
 
+type Message string
+
 const (
 	MSG  PayloadType = "MSG"
 	ACK  PayloadType = "ACK"
@@ -16,19 +18,30 @@ const (
 // TODO: implement functions to make different message types and SEPARATE the encapsulation and to-byte conversion process
 
 func encapsulate(message string, msgType PayloadType) []byte {
-	var payload []byte
+	rawPayload := Message(message)
 
-	msgID := generateID(GeneratorArgs{NumOnly: true, Max: 999999})
+	switch msgType {
+	case MSG:
+		rawPayload.toMessage()
+		break
+	default:
+		panic(
+			"invalid message type received",
+		) // returning here just breaks the switch, we don't want it to continue at all
+	}
 
-	rawPayload := fmt.Sprintf("%s|%s|%s|%s", msgType, clientID, msgID, message)
 	payloadSize := len(rawPayload) * int(unsafe.Sizeof(byte(0)))
-	payloadWithTail := rawPayload + fmt.Sprintf("|%d", payloadSize)
+	payloadWithTrailer := rawPayload + Message(fmt.Sprintf("|%d", payloadSize))
 
-	payload = []byte(payloadWithTail)
-
-	return payload
+	return toByte(payloadWithTrailer)
 }
 
-func makeMsg() string {
-	return ""
+func toByte(data Message) []byte {
+	return []byte(data)
+}
+
+func (m *Message) toMessage() {
+	msgID := generateID(GeneratorArgs{NumOnly: true, Max: 999999})
+	newMsg := fmt.Sprintf("%s|%s|%s|%s", MSG, clientID, msgID, string(*m))
+	*m = Message(newMsg)
 }
