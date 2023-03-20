@@ -23,7 +23,8 @@ func encapsulate(message string, msgType PayloadType) []byte {
 	switch msgType {
 	case MSG:
 		rawPayload.toMessage()
-		break
+	case PING:
+		rawPayload.toPing()
 	default:
 		panic(
 			"invalid message type received",
@@ -43,5 +44,10 @@ func toByte(data Message) []byte {
 func (m *Message) toMessage() {
 	msgID := generateID(GeneratorArgs{NumOnly: true, Max: 999999})
 	newMsg := fmt.Sprintf("%s|%s|%s|%s", MSG, clientID, msgID, string(*m))
+	*m = Message(newMsg)
+}
+
+func (m *Message) toPing() {
+	newMsg := fmt.Sprintf("%s|%s", MSG, clientID)
 	*m = Message(newMsg)
 }

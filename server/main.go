@@ -16,16 +16,16 @@ type Client struct {
 }
 
 /**
-* === MESSAGE FORMATS ===
+|==> MESSAGE FORMATS <==|
 *
-* Every message has 3 common parts; type|the client ID and the tail; totalBytes (used by the server to verify the data is in good shape)
+* Every message has 3 common parts; type|the client ID and the tail; total_bytes (used by the server to verify the data is in good shape)
 *
-* message: MSG|clientID|messageID|message|totalBytes
-* ack: ACK|clientID|mesageID|totalBytes
-* ping: PING|clientID|totalBytes
+* message: MSG|client_id|message_id|message|total_bytes
+* ack: ACK|client_id|message_id|total_bytes
+* ping: PING|client_id|total_bytes
 *
 * Clients reach out to the server at an interval provided by the SERVER and it is periodically checked to ensure that the client is still connected
- */
+*/
 
 func main() {
 	server := new(Server)
