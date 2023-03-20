@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"syscall"
 )
 
 func handleIncomingMsg(conn *net.UDPConn, serverAddr *net.UDPAddr) {
@@ -21,18 +22,24 @@ func handleIncomingMsg(conn *net.UDPConn, serverAddr *net.UDPAddr) {
 	}
 }
 
-func handleOutgoingMsg(conn *net.UDPConn, serverAddr *net.UDPAddr) {
+func handleOutgoingMsg(conn *net.UDPConn, serverAddr *net.UDPAddr, killChannel chan os.Signal) {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
 		fmt.Printf("%s> ", clientID)
 		msg, err := reader.ReadString('\n')
+
 		if err != nil {
 			log.Printf("unable to read input: %s", err.Error())
 			continue
 		}
 
 		msg = msg[:len(msg)-1]
+		if msg == "exit" || msg == ":q" {
+			fmt.Println("Received exit command, exiting now...")
+			killChannel <- syscall.SIGTERM
+			break
+		}
 		_, err = conn.Write(encapsulate(msg, MSG))
 		if err != nil {
 			log.Printf("error sending message: %s", err.Error())

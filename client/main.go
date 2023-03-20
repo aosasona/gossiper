@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"syscall"
 )
 
 const (
@@ -48,14 +49,14 @@ func main() {
 
 	defer conn.Close()
 
-	killChan := make(chan os.Signal)
+	killChan := make(chan os.Signal, 1)
 	var wg sync.WaitGroup
 
 	if !*noInput {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			handleOutgoingMsg(conn, remoteAddr)
+			handleOutgoingMsg(conn, remoteAddr, killChan)
 		}()
 	}
 
@@ -65,6 +66,23 @@ func main() {
 		handleIncomingMsg(conn, remoteAddr)
 	}()
 
-	signal.Notify(killChan, os.Interrupt)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		select {
+		case msg := <-killChan:
+			code := 0
+
+			if msg == os.Interrupt {
+				fmt.Println("\nreceived kill signal, exiting...")
+				code = 1
+			}
+
+			close(killChan)
+			os.Exit(code)
+		}
+	}()
+
+	signal.Notify(killChan, os.Interrupt, syscall.SIGTERM)
 	wg.Wait()
 }
