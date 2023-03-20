@@ -5,34 +5,41 @@ import (
 	"unsafe"
 )
 
-type PayloadType string
-
-type Message string
-
 const (
 	MSG  PayloadType = "MSG"
 	ACK  PayloadType = "ACK"
 	PING PayloadType = "PING"
 )
 
+type PayloadType string
+
+type Message string
+
+type RawPayload struct {
+	Message     Message
+	PayloadType PayloadType
+	MessageID   string
+}
+
 // TODO: implement functions to make different message types and SEPARATE the encapsulation and to-byte conversion process
 
-func encapsulate(message string, msgType PayloadType) []byte {
-	rawPayload := Message(message)
+func encapsulate(args RawPayload) []byte {
 
-	switch msgType {
+	switch args.PayloadType {
 	case MSG:
-		rawPayload.toMessage()
+		args.toMessage()
 	case PING:
-		rawPayload.toPing()
+		args.toPing()
+	case ACK:
+		args.toAck(args.MessageID)
 	default:
 		panic(
 			"invalid message type received",
 		) // returning here just breaks the switch, we don't want it to continue at all
 	}
 
-	payloadSize := len(rawPayload) * int(unsafe.Sizeof(byte(0)))
-	payloadWithTrailer := rawPayload + Message(fmt.Sprintf("|%d", payloadSize))
+	payloadSize := len(args.Message) * int(unsafe.Sizeof(byte(0)))
+	payloadWithTrailer := args.Message + Message(fmt.Sprintf("|%d", payloadSize))
 
 	return toByte(payloadWithTrailer)
 }
@@ -41,13 +48,18 @@ func toByte(data Message) []byte {
 	return []byte(data)
 }
 
-func (m *Message) toMessage() {
+func (e *RawPayload) toMessage() {
 	msgID := generateID(GeneratorArgs{NumOnly: true, Max: 999999})
-	newMsg := fmt.Sprintf("%s|%s|%s|%s", MSG, clientID, msgID, string(*m))
-	*m = Message(newMsg)
+	newMsg := fmt.Sprintf("%s|%s|%s|%s", MSG, clientID, msgID, string(e.Message))
+	e.Message = Message(newMsg)
 }
 
-func (m *Message) toPing() {
-	newMsg := fmt.Sprintf("%s|%s", MSG, clientID)
-	*m = Message(newMsg)
+func (e *RawPayload) toPing() {
+	newMsg := fmt.Sprintf("%s|%s", PING, clientID)
+	e.Message = Message(newMsg)
+}
+
+func (e *RawPayload) toAck(msgID string) {
+	newMsg := fmt.Sprintf("%s|%s|%s", ACK, clientID, msgID)
+	e.Message = Message(newMsg)
 }

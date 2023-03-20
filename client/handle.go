@@ -40,7 +40,10 @@ func handleOutgoingMsg(conn *net.UDPConn, serverAddr *net.UDPAddr, killChannel c
 			killChannel <- syscall.SIGTERM
 			break
 		}
-		_, err = conn.Write(encapsulate(msg, MSG))
+		_, err = conn.Write(encapsulate(RawPayload{
+			Message:     Message(msg),
+			PayloadType: MSG,
+		}))
 		if err != nil {
 			log.Printf("error sending message: %s", err.Error())
 			continue
