@@ -54,3 +54,23 @@ func decodeMessage(message []byte) (*Payload, error) {
 
 	return payload, nil
 }
+
+func getMessageType(parts []string) (PayloadType, error) {
+	if len(parts) < 2 {
+		return "", fmt.Errorf("failed to get type for invalid payload")
+	}
+
+	switch PayloadType(parts[0]) {
+	case MSG:
+		return MSG, nil
+	case ACK:
+		return ACK, nil
+	case PING:
+		return PING, nil
+	default:
+		return "", fmt.Errorf(
+			"unable to determine payload type for payload with header `%s`",
+			parts[0],
+		)
+	}
+}
