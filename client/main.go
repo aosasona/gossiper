@@ -52,6 +52,12 @@ func main() {
 	killChan := make(chan os.Signal, 1)
 	var wg sync.WaitGroup
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ping(conn)
+	}()
+
 	if !*noInput {
 		wg.Add(1)
 		go func() {

@@ -25,16 +25,26 @@ func handleIncomingMsg(conn *net.UDPConn, server *Server, broadcastChannel chan 
 		})
 
 		fmt.Printf("[%s] %s\n", payload.ClientID, payload.Message)
-		// broadcastChannel <- msg[:n]
+		if payload.Type == MSG {
+			broadcastChannel <- msg[:n]
+		}
 	}
 }
 
-func handleBroadcast(conn *net.UDPConn, broadcastChannel chan []byte) {
+func handleBroadcast(conn *net.UDPConn, clients *[]Client, broadcastChannel chan []byte) {
 	select {
 	case msg := <-broadcastChannel:
-		_, err := conn.Write(msg)
-		if err != nil {
-			fmt.Printf("[ERROR] unable to broadcast message: %s", err.Error())
+
+		for _, client := range *clients {
+			addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", client.Addr, client.Port))
+			if err != nil {
+				fmt.Printf("[ERROR] unable to resolve address for client (%s): %s", client.ID, err.Error())
+			}
+
+			_, err = conn.WriteToUDP(msg, addr)
+			if err != nil {
+				fmt.Printf("[ERROR] unable to broadcast message: %s", err.Error())
+			}
 		}
 	}
 }

@@ -1,6 +1,17 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
+
+type Client struct {
+	ID       string
+	Addr     string
+	Port     int
+	Alive    bool
+	LastPing time.Time
+}
 
 type Server struct {
 	clients []Client

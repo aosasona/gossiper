@@ -4,28 +4,7 @@ import (
 	"flag"
 	"net"
 	"sync"
-	"time"
 )
-
-type Client struct {
-	ID       string
-	Addr     string
-	Port     int
-	Alive    bool
-	LastPing time.Time
-}
-
-/**
-|==> MESSAGE FORMATS <==|
-*
-* Every message has 3 common parts; type|the client ID and the tail; total_bytes (used by the server to verify the data is in good shape)
-*
-* message: MSG|client_id|message_id|message|total_bytes
-* ack: ACK|client_id|message_id|total_bytes
-* ping: PING|client_id|total_bytes
-*
-* Clients reach out to the server at an interval provided by the SERVER and it is periodically checked to ensure that the client is still connected
-*/
 
 func main() {
 	server := new(Server)
@@ -52,11 +31,11 @@ func main() {
 		handleIncomingMsg(conn, server, broadcastChan)
 	}()
 
-	// wg.Add(1)
-	// go func() {
-	// 	defer wg.Done()
-	// 	handleBroadcast(conn, broadcastChan)
-	// }()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		handleBroadcast(conn, &server.clients, broadcastChan)
+	}()
 
 	wg.Wait()
 	close(broadcastChan)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -13,6 +14,12 @@ const (
 	MSG  PayloadType = "MSG"
 	ACK  PayloadType = "ACK"
 	PING PayloadType = "PING"
+)
+
+const (
+	MSG_LENGTH  = 5
+	ACK_LENGTH  = 4
+	PING_LENGTH = 3
 )
 
 type Payload struct {
@@ -31,28 +38,49 @@ func decodeMessage(message []byte) (*Payload, error) {
 
 	messageParts := strings.Split(messageString, "|")
 
-	if len(messageParts) != 4 {
+	messageType, err := getMessageType(messageParts)
+	if err != nil {
+		return payload, err
+	}
+
+	if err = validateMessageLength(messageType, messageParts); err != nil {
 		return payload, fmt.Errorf("invalid payload received")
 	}
 
-	messageSize, err := strconv.Atoi(messageParts[3])
+	messageSize, err := strconv.Atoi(messageParts[len(messageParts)-1])
 	if err != nil {
 		return payload, fmt.Errorf("unable to parse total bytes: %s", err.Error())
 	}
 
-	originalMsg := fmt.Sprintf("%s|%s|%s", messageParts[0], messageParts[1], messageParts[2])
+	originalMsg := messageParts[0]
+	for i := 1; i < len(messageParts)-1; i++ {
+		originalMsg += fmt.Sprintf("|%s", messageParts[i])
+	}
 	reconstructedMessageSize := len(originalMsg) * int(unsafe.Sizeof(byte(0)))
 
 	if reconstructedMessageSize != messageSize {
 		return payload, fmt.Errorf("message has been corrupted in transit")
 	}
 
-	payload.ClientID = messageParts[0]
-	payload.ID = messageParts[1]
-	payload.Message = string(messageParts[2])
+	id, msg := extractMessageMeta(messageType, messageParts)
+
+	payload.ClientID = messageParts[1]
+	payload.ID = id
+	payload.Message = string(msg)
 	payload.RawMessage = message
+	payload.Type = messageType
+	payload.TotalBytes = uint(messageSize)
 
 	return payload, nil
+}
+
+func extractMessageMeta(msgType PayloadType, parts []string) (id, message string) {
+	if msgType == MSG {
+		id = parts[2]
+		message = parts[3]
+	}
+
+	return
 }
 
 func getMessageType(parts []string) (PayloadType, error) {
@@ -73,4 +101,25 @@ func getMessageType(parts []string) (PayloadType, error) {
 			parts[0],
 		)
 	}
+}
+
+func validateMessageLength(msgType PayloadType, parts []string) error {
+	var length int
+
+	switch msgType {
+	case MSG:
+		length = MSG_LENGTH
+	case ACK:
+		length = ACK_LENGTH
+	case PING:
+		length = PING_LENGTH
+	default:
+		return errors.New("invalid message type received")
+	}
+
+	if len(parts) != length {
+		return errors.New("invalid payload received")
+	}
+
+	return nil
 }

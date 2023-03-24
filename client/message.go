@@ -21,8 +21,6 @@ type RawPayload struct {
 	MessageID   string
 }
 
-// TODO: implement functions to make different message types and SEPARATE the encapsulation and to-byte conversion process
-
 func encapsulate(args RawPayload) []byte {
 
 	switch args.PayloadType {
