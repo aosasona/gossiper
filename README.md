@@ -15,9 +15,13 @@ Every message has 3 common parts; type|the client ID and the tail; total_bytes (
 > ack: ACK|client_id|message_id|total_bytes
 >
 > ping: PING|client_id|total_bytes
+>
+> pong: PONG|ping_interval
 
 Live clients: Since it's UDP, nothing is actually kept alive per se, but I want my server to know what clients are still "alive" before sending a message and for ACK counting before destroying a message.
 
 ## How?
 
 Clients reach out to the server at an interval provided by the SERVER, and it is periodically checked to ensure that the client is still connected.
+
+> Type *:exit* or *:q* to kill a client

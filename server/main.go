@@ -7,8 +7,6 @@ import (
 )
 
 func main() {
-	server := new(Server)
-
 	port := flag.Int("port", 8080, "port to listen on")
 	addr := net.UDPAddr{
 		Port: *port,
@@ -21,6 +19,9 @@ func main() {
 	}
 	defer conn.Close()
 
+	server := NewServer(conn)
+
+	server.GeneratePingInterval()
 	broadcastChan := make(chan []byte)
 
 	var wg sync.WaitGroup
@@ -28,16 +29,15 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		handleIncomingMsg(conn, server, broadcastChan)
+		handleIncomingPayload(conn, server, &broadcastChan)
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		handleBroadcast(conn, &server.clients, broadcastChan)
+		handleBroadcast(conn, server, &broadcastChan)
 	}()
 
 	wg.Wait()
 	close(broadcastChan)
-
 }

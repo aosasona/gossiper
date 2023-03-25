@@ -9,6 +9,7 @@ const (
 	MSG  PayloadType = "MSG"
 	ACK  PayloadType = "ACK"
 	PING PayloadType = "PING"
+	PONG PayloadType = "PONG"
 )
 
 type PayloadType string
@@ -22,7 +23,6 @@ type RawPayload struct {
 }
 
 func encapsulate(args RawPayload) []byte {
-
 	switch args.PayloadType {
 	case MSG:
 		args.toMessage()

@@ -30,10 +30,12 @@ type Payload struct {
 	ClientID   string
 	AckCount   int
 	TotalBytes uint
+	Length     int
 }
 
-func decodeMessage(message []byte) (*Payload, error) {
+func decodeMessage(message []byte, length int) (*Payload, error) {
 	payload := new(Payload)
+	message = message[:length]
 	messageString := string(message)
 
 	messageParts := strings.Split(messageString, "|")
@@ -70,6 +72,7 @@ func decodeMessage(message []byte) (*Payload, error) {
 	payload.RawMessage = message
 	payload.Type = messageType
 	payload.TotalBytes = uint(messageSize)
+	payload.Length = length
 
 	return payload, nil
 }

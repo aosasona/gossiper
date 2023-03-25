@@ -5,43 +5,52 @@ import (
 	"net"
 )
 
-func handleIncomingMsg(conn *net.UDPConn, server *Server, broadcastChannel chan []byte) {
-	// TODO: handle ACKs and PINGs
-
+func handleIncomingPayload(conn *net.UDPConn, server *Server, broadcastChannel *chan []byte) {
 	for {
 		msg := make([]byte, 1024)
 		n, addr, err := conn.ReadFromUDP(msg)
 
-		payload, err := decodeMessage(msg[:n])
+		payload, err := decodeMessage(msg, n)
 		if err != nil {
-			fmt.Printf("[ERROR] %s\n", err.Error())
+			fmt.Printf("\n[ERROR] %s\n", err.Error())
 		}
 
-		server.AddClient(Client{
-			ID:    payload.ClientID,
-			Addr:  addr.IP.String(),
-			Port:  addr.Port,
-			Alive: true,
-		})
+		if _, exists := server.FindClient(payload.ClientID); !exists {
+			server.AddClient(Client{
+				ID:    payload.ClientID,
+				Addr:  addr.IP.String(),
+				Port:  addr.Port,
+				Alive: true,
+			})
+		}
 
-		fmt.Printf("[%s] %s\n", payload.ClientID, payload.Message)
-		if payload.Type == MSG {
-			broadcastChannel <- msg[:n]
+		switch payload.Type {
+		case MSG:
+			err = payload.handleMsg(broadcastChannel, server)
+		case ACK:
+			err = payload.handleAck(server)
+		case PING:
+			err = payload.handlePing(server)
+		default:
+			fmt.Printf("\n[ERROR] unable to handle message: invalid message type\n")
+			continue
+		}
+
+		if err != nil {
+			fmt.Printf("\n[ERROR] unable to handle message: %s\n", err.Error())
+			continue
 		}
 	}
 }
 
-func handleBroadcast(conn *net.UDPConn, clients *[]Client, broadcastChannel chan []byte) {
+func handleBroadcast(conn *net.UDPConn, server *Server, broadcastChannel *chan []byte) {
 	select {
-	case msg := <-broadcastChannel:
-
-		for _, client := range *clients {
-			addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", client.Addr, client.Port))
-			if err != nil {
-				fmt.Printf("[ERROR] unable to resolve address for client (%s): %s", client.ID, err.Error())
-			}
-
-			_, err = conn.WriteToUDP(msg, addr)
+	case msg := <-*broadcastChannel:
+		for _, client := range server.GetClients() {
+			_, err := conn.WriteToUDP(msg, &net.UDPAddr{
+				IP:   net.ParseIP(client.Addr),
+				Port: client.Port,
+			})
 			if err != nil {
 				fmt.Printf("[ERROR] unable to broadcast message: %s", err.Error())
 			}

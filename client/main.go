@@ -16,7 +16,12 @@ const (
 	MIN_CLIENT_ID = 999
 )
 
-var clientID string
+var (
+	clientID string
+
+	INITIAL_PING_COMPLETE bool
+	PING_INTERVAL         int64
+)
 
 type GeneratorArgs struct {
 	Min       int
@@ -55,21 +60,21 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ping(conn)
+		ping(conn, killChan)
 	}()
 
 	if !*noInput {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			handleOutgoingMsg(conn, remoteAddr, killChan)
+			handleOutgoingPayload(conn, remoteAddr, killChan)
 		}()
 	}
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		handleIncomingMsg(conn, remoteAddr)
+		handleIncomingPayload(conn, remoteAddr)
 	}()
 
 	wg.Add(1)
