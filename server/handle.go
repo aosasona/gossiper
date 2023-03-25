@@ -5,7 +5,7 @@ import (
 	"net"
 )
 
-func handleIncomingPayload(conn *net.UDPConn, server *Server, broadcastChannel *chan []byte) {
+func handleIncomingPayload(conn *net.UDPConn, server *Server, broadcastChannel chan []byte) {
 	for {
 		msg := make([]byte, 1024)
 		n, addr, err := conn.ReadFromUDP(msg)
@@ -43,9 +43,9 @@ func handleIncomingPayload(conn *net.UDPConn, server *Server, broadcastChannel *
 	}
 }
 
-func handleBroadcast(conn *net.UDPConn, server *Server, broadcastChannel *chan []byte) {
-	select {
-	case msg := <-*broadcastChannel:
+func handleBroadcast(conn *net.UDPConn, server *Server, broadcastChannel chan []byte) {
+	for {
+		msg := <-broadcastChannel
 		for _, client := range server.GetClients() {
 			_, err := conn.WriteToUDP(msg, &net.UDPAddr{
 				IP:   net.ParseIP(client.Addr),

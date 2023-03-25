@@ -29,13 +29,13 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		handleIncomingPayload(conn, server, &broadcastChan)
+		handleIncomingPayload(conn, server, broadcastChan)
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		handleBroadcast(conn, server, &broadcastChan)
+		handleBroadcast(conn, server, broadcastChan)
 	}()
 
 	wg.Wait()

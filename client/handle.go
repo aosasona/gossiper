@@ -10,9 +10,9 @@ import (
 )
 
 func handleIncomingPayload(conn *net.UDPConn, serverAddr *net.UDPAddr) {
-	if INITIAL_PING_COMPLETE {
-		buf := make([]byte, 1024)
-		for {
+	buf := make([]byte, 1024)
+	for {
+		if INITIAL_PING_COMPLETE {
 			n, _, err := conn.ReadFromUDP(buf)
 			if err != nil {
 				fmt.Printf("\n[ERROR] error reading incoming payload: %v\n", err)
@@ -33,6 +33,7 @@ func handleIncomingPayload(conn *net.UDPConn, serverAddr *net.UDPAddr) {
 				handlePong(payload)
 			}
 
+			break
 		}
 	}
 }
@@ -61,8 +62,10 @@ func handleOutgoingPayload(conn *net.UDPConn, serverAddr *net.UDPAddr, killChann
 		}))
 		if err != nil {
 			fmt.Printf("\n[ERROR] error sending message: %s\n", err.Error())
-			continue
+			break
 		}
+
+		continue
 	}
 }
 

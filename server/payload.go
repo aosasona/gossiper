@@ -6,9 +6,9 @@ import (
 	"net"
 )
 
-func (p *Payload) handleMsg(broadcastChannel *chan []byte, server *Server) error {
+func (p *Payload) handleMsg(broadcastChannel chan []byte, server *Server) error {
 	fmt.Printf("[%s] %s\n", p.ClientID, p.Message)
-	*broadcastChannel <- p.RawMessage[:p.Length]
+	broadcastChannel <- p.RawMessage[:p.Length]
 	return nil
 }
 

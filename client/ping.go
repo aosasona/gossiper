@@ -9,7 +9,7 @@ import (
 )
 
 func ping(conn *net.UDPConn, killChannel chan os.Signal) {
-	retryCount := 0
+	PING_RETRY_COUNT := 0
 
 	if PING_INTERVAL == 0 {
 		PING_INTERVAL = 500
@@ -21,9 +21,9 @@ func ping(conn *net.UDPConn, killChannel chan os.Signal) {
 		}))
 
 		if err != nil {
-			if retryCount < 3 {
-				fmt.Printf("\n[ERROR] Failed to ping, retrying (%d)", retryCount+1)
-				retryCount++
+			if PING_RETRY_COUNT < 3 {
+				fmt.Printf("\n[ERROR] Failed to ping, retrying (%d)", PING_RETRY_COUNT+1)
+				PING_RETRY_COUNT++
 				continue
 			}
 
@@ -34,6 +34,10 @@ func ping(conn *net.UDPConn, killChannel chan os.Signal) {
 
 		if !INITIAL_PING_COMPLETE {
 			INITIAL_PING_COMPLETE = true
+		}
+
+		if PING_RETRY_COUNT > 0 {
+			PING_RETRY_COUNT = 0
 		}
 	}
 }
