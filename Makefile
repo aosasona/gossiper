@@ -6,3 +6,5 @@ run-client-sender:
 
 run-client:
 	go run ./client/*.go -no-input
+
+PHONY: run-server run-client-sender run-client
